@@ -1,3 +1,4 @@
+// Purely visual: gives each board a stable Trello-like gradient based on its id.
 const GRADIENTS = [
   'linear-gradient(135deg,#0C66E4,#669DF1)',
   'linear-gradient(135deg,#6E5DC6,#B8ACF6)',

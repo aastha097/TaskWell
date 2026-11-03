@@ -4,9 +4,8 @@ import AuthScreen from './components/AuthScreen.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import OrgView from './components/OrgView.jsx'
 import BoardView from './components/BoardView.jsx'
-import Topbar from './components/Topbar.jsx'
+import TitleBlock from './components/TitleBlock.jsx'
 import Toast from './components/Toast.jsx'
-import { boardGradient } from './boardColors.js'
 
 function loadOrgsFromStorage() {
   try {
@@ -27,7 +26,6 @@ export default function App() {
   const [currentBoard, setCurrentBoard] = useState(null)
   const [issues, setIssues] = useState([])
   const [toast, setToast] = useState(null)
-  const [showNewOrg, setShowNewOrg] = useState(false)
 
   const notify = useCallback((message, isError = false) => {
     setToast({ message, isError, key: Date.now() })
@@ -84,7 +82,7 @@ export default function App() {
   async function createOrg(title, description) {
     try {
       const data = await api.createOrg(title, description)
-      notify('Workspace created')
+      notify('Organization created')
       await openOrg(data.id)
     } catch (err) {
       notify(err.message, true)
@@ -151,7 +149,7 @@ export default function App() {
     try {
       await api.createIssue({ ...payload, boardId: currentBoard._id })
       await refreshIssues(currentBoard._id)
-      notify('Card added')
+      notify('Work order created')
     } catch (err) {
       notify(err.message, true)
     }
@@ -179,31 +177,28 @@ export default function App() {
     return <AuthScreen onSignedIn={handleSignedIn} />
   }
 
-  const boardBg = currentBoard ? { background: boardGradient(currentBoard._id) } : undefined
-
   return (
     <div className="shell">
-      <Topbar username={username} onSignOut={handleSignOut} onCreate={() => setShowNewOrg(true)} />
       <div className="shell-body">
         <Sidebar
           orgs={orgs}
           currentOrgId={currentOrgId}
           boards={boards}
           currentBoardId={currentBoard?._id}
+          username={username}
           onOpenOrg={openOrg}
           onCreateOrg={createOrg}
           onTrackOrg={trackOrg}
           onOpenBoard={openBoard}
           onCreateBoard={createBoard}
-          showNewOrg={showNewOrg}
-          setShowNewOrg={setShowNewOrg}
+          onSignOut={handleSignOut}
         />
-        <main className={`canvas ${currentBoard ? 'on-board' : ''}`} style={boardBg}>
+        <main className="canvas">
           {!currentOrg && (
             <div className="void">
-              <div className="void-mark">▦</div>
-              <h2>Pick a workspace</h2>
-              <p>Create a workspace from the sidebar, or join one you already belong to using its ID.</p>
+              <div className="void-mark">+</div>
+              <h2>No sheet open</h2>
+              <p>Start a new organization from the index on the left, or open one you already belong to.</p>
             </div>
           )}
           {currentOrg && !currentBoard && (
@@ -228,6 +223,7 @@ export default function App() {
           )}
         </main>
       </div>
+      <TitleBlock orgTitle={currentOrg?.title} boardTitle={currentBoard?.title} username={username} />
       <Toast data={toast} />
     </div>
   )
