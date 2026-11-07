@@ -1,114 +1,99 @@
-# Dispatch — Kanban-Style Work Order Tracker
+# TaskWell
 
-A Trello-style issue tracker: organizations → boards → work orders (TODO / IN_PROGRESS / DONE). Node/Express/MongoDB API on the backend, a React (Vite) frontend styled as a drafting sheet on the front.
+A Trello-style project board app. Workspaces contain boards, and boards contain cards that move through To do, In progress and Done. Node/Express/MongoDB API with a React (Vite) frontend.
+
+## Features
+
+- Sign up and log in (bcrypt + JWT)
+- Workspaces with an admin and members
+- Boards per workspace
+- Cards with title, description, status and assignee
+- Drag and drop between lists
+- Responsive layout
+
+## Project structure
 
 ```
-dispatch/
+boardwalk/
 ├── backend/
-│ ├── index.js – routes, auth middleware, server entry
-│ ├── models.js – Mongoose schemas + DB connection
-│ ├── package.json
-│ └── .env – JWT_SECRET (you create this)
+│   ├── index.js        routes, auth middleware, server entry
+│   ├── models.js       Mongoose schemas and DB connection
+│   └── package.json
 └── frontend/
- ├── index.html
- ├── vite.config.js – pinned to port 3001
- ├── package.json
- └── src/
- ├── main.jsx
- ├── App.jsx – top-level state & view routing
- ├── api.js – fetch wrapper for every backend route
- ├── styles.css – design system (CSS variables at top)
- └── components/
- ├── AuthScreen.jsx
- ├── Sidebar.jsx
- ├── OrgView.jsx
- ├── BoardView.jsx
- ├── WorkOrderCard.jsx
- ├── TitleBlock.jsx
- └── Toast.jsx
+    ├── index.html
+    ├── vite.config.js  dev server pinned to port 3001
+    └── src/
+        ├── App.jsx     top-level state and views
+        ├── api.js      fetch wrapper for every backend route
+        ├── styles.css
+        └── components/ AuthScreen, Topbar, Welcome, BoardsHome,
+                        BoardView, CardModal, MembersModal, FormModal,
+                        Modal, Avatar, Logo, Icons, Toast
 ```
 
-## Prerequisites
+## Run locally
 
-- Node.js 18+
-- npm
-- MongoDB running locally on the default port (`mongodb://localhost:27017`)
+Requires Node.js 18+ and a MongoDB connection (local or Atlas).
 
-## 1. Backend setup
+**Backend**
 
 ```bash
 cd backend
-npm install express mongoose jsonwebtoken cors bcrypt dotenv
+npm install
 ```
 
-Create a `.env` file in `backend/`:
+Create `backend/.env`:
 
 ```
-JWT_SECRET=replace_with_any_long_random_string
+MONGO_URL=mongodb://localhost:27017/trelloapp
+JWT_SECRET=replace_with_a_long_random_string
+FRONTEND_URL=http://localhost:3001
 ```
-
-Make sure MongoDB is running (`mongod`, or your usual local setup — it connects to the `trelloapp` database automatically), then start the API:
 
 ```bash
-node index.js
+node index.js     # http://localhost:3000
 ```
 
-The server listens on **http://localhost:3000**.
-
-## 2. Frontend setup
+**Frontend**
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev       # http://localhost:3001
 ```
 
-Runs on **http://localhost:3001** — pinned on purpose in `vite.config.js`, because the backend's CORS is locked to that exact origin:
+## Deployment
 
-```js
-app.use(cors({ origin: 'http://localhost:3001', credentials: true }))
-```
+| Where | Setting | Value |
+|-------|---------|-------|
+| Backend host | `MONGO_URL` | MongoDB Atlas connection string |
+| Backend host | `JWT_SECRET` | long random string |
+| Backend host | `FRONTEND_URL` | your frontend URL(s), comma-separated, no trailing slash |
+| Vercel | `VITE_API_URL` | your backend's `https://` URL, no trailing slash |
 
-If you ever change one port, change the other to match.
-
-## Run order
-
-1. Start MongoDB
-2. `node index.js` (backend, port 3000)
-3. `npm run dev` in `frontend/` (port 3001)
-4. Open http://localhost:3001, register a user, sign in
+Redeploy the frontend after changing `VITE_API_URL`, because Vite reads it at build time.
 
 ## API reference
 
-| Method | Route | Auth | Body / Query |
-|--------|---------------------------------|------|-------------------------------------------------|
+`✔` routes need a `token` header, returned by `/signin`.
+
+| Method | Route | Auth | Body / query |
+|--------|-------|------|--------------|
 | POST | `/signup` | – | `username`, `password` |
-| POST | `/signin` | – | `username`, `password` → returns `token` |
+| POST | `/signin` | – | `username`, `password` → `token` |
 | POST | `/organization` | ✔ | `title`, `description` |
 | GET | `/organization?organizationId=` | ✔ | member or admin only |
 | POST | `/add-member-to-organization` | ✔ admin | `organizationId`, `memberusername` |
 | DELETE | `/members` | ✔ admin | `organizationId`, `memberusername` |
-| GET | `/members?organizationId=` | ✔ admin | — |
-| POST | `/board` | ✔ member/admin | `title`, `organizationId` |
-| GET | `/boards?organizationId=` | ✔ member/admin | — |
-| POST | `/issue` | ✔ member/admin | `title`, `description`, `boardId`, `assignedTo` |
-| GET | `/issues?boardId=` | ✔ member/admin | — |
-| PUT | `/issues` | ✔ member/admin | `issueId` + any of `title`, `description`, `status`, `assignedTo` |
+| GET | `/members?organizationId=` | ✔ admin | – |
+| POST | `/board` | ✔ member | `title`, `organizationId` |
+| GET | `/boards?organizationId=` | ✔ member | – |
+| POST | `/issue` | ✔ member | `title`, `description`, `boardId`, `assignedTo` |
+| GET | `/issues?boardId=` | ✔ member | – |
+| PUT | `/issues` | ✔ member | `issueId` plus any of `title`, `description`, `status`, `assignedTo` |
 
-`✔` routes need a `token` header (returned from `/signin`).
+## Known limitations
 
-## Known limitation
-
-There's no "list my organizations" endpoint — only `GET /organization?organizationId=X` for one org at a time. The frontend works around this by remembering org IDs you've created or manually added via "track by ID" in the sidebar (stored in `localStorage`). To fix properly, add:
-
-```js
-app.get("/organizations", middleware, async (req, res) => {
-  const orgs = await organizationmodel.find({ $or: [{ admin: req.userId }, { members: req.userId }] })
-  res.json({ organizations: orgs })
-})
-```
-
-## Notes
-
-- Admin-only actions (add/remove member) are shown to every org member in the UI — the server is the real gatekeeper (returns `411` if you're not admin), so there's no client-side identity check to get out of sync.
-- Passwords are hashed with bcrypt; auth uses a JWT signed with `JWT_SECRET`, sent back on every authenticated request via a `token` header.
+- There is no "list my workspaces" route, so the frontend remembers workspace IDs per user in `localStorage`. Use **Join with workspace ID** for workspaces you were added to.
+- `POST /issue` always creates cards as `TODO`. The frontend follows up with a status update when a card is added to another list.
+- Admin-only controls are hidden for non-admins in the UI, and the server enforces them.
