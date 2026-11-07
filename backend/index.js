@@ -7,7 +7,13 @@ const {organizationmodel,usermodel,boardsmodel,issuemodel}=require('./models')
 
 const app=express()
 app.use(express.json())
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3001' }))
+const allowed = (process.env.FRONTEND_URL || 'http://localhost:3001').split(',').map((s) => s.trim())
+app.use(cors({
+  origin: (origin, cb) =>
+    !origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)
+      ? cb(null, true)
+      : cb(new Error('Not allowed by CORS')),
+}))
 
 const PORT = process.env.PORT || 3000
 
