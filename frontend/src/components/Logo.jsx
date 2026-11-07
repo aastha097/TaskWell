@@ -1,4 +1,4 @@
-export default function Logo({ size = 24, text = true }) {
+export default function Logo({ size = 28, wordmark = true }) {
   return (
     <span className="logo">
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
@@ -6,7 +6,12 @@ export default function Logo({ size = 24, text = true }) {
         <rect x="4.5" y="4.5" width="6" height="14" rx="1.2" fill="#fff" />
         <rect x="13.5" y="4.5" width="6" height="8" rx="1.2" fill="#fff" />
       </svg>
-      {text && <span className="logo-text">Trello</span>}
+      {wordmark && (
+        <span className="logo-text">
+          <span className="logo-by">ATLASSIAN</span>
+          <span className="logo-name">Trello</span>
+        </span>
+      )}
     </span>
   )
 }
